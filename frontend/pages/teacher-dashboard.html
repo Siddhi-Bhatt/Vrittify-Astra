@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teacher Dashboard – VRITTIFY ASTRA</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body class="page-body">
+
+<div class="dashboard-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span style="color:var(--accent3)">◈</span>
+      VRITTIFY <em style="color:var(--accent3);font-style:italic">ASTRA</em>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Navigation</div>
+      <a class="nav-item active" id="nav-overview" onclick="showView('overview')">
+        <span class="nav-icon">📊</span> Overview
+      </a>
+      <a class="nav-item" id="nav-assignments" onclick="showView('assignments')">
+        <span class="nav-icon">📋</span> Assignments
+      </a>
+      <a class="nav-item" id="nav-scan" onclick="showView('scan')">
+        <span class="nav-icon">🔬</span> Scan & Analyze
+      </a>
+      <a class="nav-item" id="nav-reports" onclick="showView('reports')">
+        <span class="nav-icon">📈</span> Reports
+      </a>
+
+      <div class="sidebar-section-label">Quick Filters</div>
+      <div style="padding:0 8px">
+        <!-- FIX: onchange now calls applyFilters() which updates ALL views -->
+        <select class="form-select" id="filter-subject" onchange="applyFilters()" style="font-size:12px;padding:8px 12px;margin-bottom:8px">
+          <option value="">All Subjects</option>
+          <option>Mathematics</option><option>Physics</option><option>Chemistry</option>
+          <option>Biology</option><option>English</option><option>History</option>
+          <option>Geography</option><option>Computer Science</option><option>Economics</option>
+        </select>
+        <select class="form-select" id="filter-grade" onchange="applyFilters()" style="font-size:12px;padding:8px 12px">
+          <option value="">All Grades</option>
+          <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+          <option>Grade 9</option><option>Grade 10</option><option>Grade 11</option><option>Grade 12</option>
+        </select>
+        <!-- Filter label showing active state -->
+        <div id="filter-label" style="font-size:10px;color:var(--accent2);margin-top:8px;padding:0 4px;display:none">
+          ✦ Filter active — <a href="#" onclick="clearFilters()" style="color:var(--accent2)">Clear</a>
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar">T</div>
+      <div class="user-info">
+        <div class="user-name">Loading…</div>
+        <div class="user-role">👩‍🏫 Teacher</div>
+      </div>
+      <button class="logout-btn" onclick="VSTRA.logout()" title="Logout">⏏</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- OVERVIEW VIEW -->
+    <div id="view-overview">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Teacher Dashboard</h1>
+          <p id="teacher-welcome">Welcome!</p>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-sm btn-secondary" onclick="loadAllData().then(applyFilters)">↻ Refresh</button>
+          <button class="btn btn-sm btn-primary" style="background:var(--accent3)" onclick="showView('scan')">🔬 Scan Now</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <!-- Filter active banner -->
+        <div id="overview-filter-banner" style="display:none;margin-bottom:16px;padding:10px 16px;background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.2);border-radius:10px;font-size:12px;color:var(--accent2);display:flex;align-items:center;justify-content:space-between">
+          <span id="overview-filter-text">Showing filtered results</span>
+          <a href="#" onclick="clearFilters()" style="color:var(--accent2);font-size:11px">✕ Clear filter</a>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon">📤</div>
+            <div class="stat-card-value" id="t-stat-total">0</div>
+            <div class="stat-card-label">Total Submissions</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">⏳</div>
+            <div class="stat-card-value" id="t-stat-pending">0</div>
+            <div class="stat-card-label">Pending Scan</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">🚩</div>
+            <div class="stat-card-value" id="t-stat-flagged">0</div>
+            <div class="stat-card-label">Flagged</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">⭐</div>
+            <div class="stat-card-value" id="t-stat-avg">—</div>
+            <div class="stat-card-label">Avg. Class Score</div>
+          </div>
+        </div>
+
+        <div class="grid-2 section-gap">
+          <div class="card">
+            <div class="card-title">Score Distribution</div>
+            <div class="card-sub" id="score-chart-sub">Scores across all scanned assignments</div>
+            <canvas id="score-chart" height="200"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">Flag Analysis</div>
+            <div class="card-sub">Types of issues detected</div>
+            <canvas id="flag-chart" height="200"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Submissions</div>
+          <div class="card-sub" id="recent-table-sub">Latest assignments</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"/></th>
+                  <th>Student</th><th>Subject</th><th>Grade</th><th>Submitted</th><th>Status</th><th>Score</th><th>Flags</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="t-recent-table">
+                <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSIGNMENTS VIEW -->
+    <div id="view-assignments" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left"><h1>All Assignments</h1><p id="assignments-sub">Browse and manage submissions</p></div>
+        <div class="page-header-right">
+          <button class="btn btn-secondary btn-sm" onclick="loadAllData().then(applyFilters)">↻ Refresh</button>
+          <button class="btn btn-sm" style="background:var(--accent3);color:#fff" onclick="showView('scan')">🔬 Scan Selected</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><input type="checkbox" id="select-all-2" onchange="toggleSelectAll2(this)"/></th>
+                  <th>Student</th><th>Subject</th><th>Grade</th><th>Title</th>
+                  <th>Submitted</th><th>Status</th><th>Score</th><th>Flags</th><th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="all-assignments-table">
+                <tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCAN VIEW -->
+    <div id="view-scan" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Scan & Analyze</h1><p>Run AI pipeline on selected assignments</p></div>
+      </div>
+      <div class="content-area">
+        <div class="grid-2 section-gap" style="align-items:start">
+          <div class="card">
+            <div class="card-title">📋 Select Assignments to Scan</div>
+            <div class="card-sub">Choose submissions to run AI analysis on</div>
+            <div id="scan-assignment-list" style="max-height:400px;overflow-y:auto">
+              <p class="text-muted" style="padding:20px 0">Loading submissions…</p>
+            </div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn btn-secondary btn-sm" onclick="selectAllForScan()">Select All</button>
+              <button class="btn btn-secondary btn-sm" onclick="clearScanSelection()">Clear</button>
+              <span id="scan-count" class="text-muted" style="align-self:center;font-size:12px">0 selected</span>
+            </div>
+            <button class="btn btn-lg full-width" style="margin-top:16px;background:var(--accent3);color:#fff" onclick="startScan()">
+              🔬 Run AI Scan Pipeline
+            </button>
+          </div>
+
+          <div>
+            <div class="card section-gap" id="scan-progress-card" style="display:none">
+              <div class="card-title">⚙️ Scan Progress</div>
+              <div class="card-sub" id="scan-progress-label">Initializing…</div>
+              <div class="progress-bar-wrap">
+                <div class="progress-track" style="height:10px">
+                  <div class="progress-fill" id="scan-progress-bar" style="width:0%;transition:width 0.5s ease"></div>
+                </div>
+              </div>
+              <div style="margin-top:20px">
+                <div class="scan-step" id="step-preprocess">
+                  <div class="scan-step-icon">🖼️</div>
+                  <div class="scan-step-text"><div class="scan-step-label">Preprocessing</div><div class="scan-step-sub">Image cleaning, noise removal, skew correction</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-ocr">
+                  <div class="scan-step-icon">📖</div>
+                  <div class="scan-step-text"><div class="scan-step-label">OCR Extraction</div><div class="scan-step-sub">Extracting text from handwriting</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-stylometry">
+                  <div class="scan-step-icon">🧠</div>
+                  <div class="scan-step-text"><div class="scan-step-label">Stylometry Engine</div><div class="scan-step-sub">Writing style & structure analysis</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-handwriting">
+                  <div class="scan-step-icon">✍️</div>
+                  <div class="scan-step-text"><div class="scan-step-label">Handwriting Analysis</div><div class="scan-step-sub">Stroke patterns, spacing, pressure</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-ai-detect">
+                  <div class="scan-step-icon">🤖</div>
+                  <div class="scan-step-text"><div class="scan-step-label">AI Content Detection</div><div class="scan-step-sub">Detecting AI-generated patterns</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-copy">
+                  <div class="scan-step-icon">🔍</div>
+                  <div class="scan-step-text"><div class="scan-step-label">Copy Detection</div><div class="scan-step-sub">Cross-student similarity check</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+                <div class="scan-step" id="step-score">
+                  <div class="scan-step-icon">⭐</div>
+                  <div class="scan-step-text"><div class="scan-step-label">Score Generation</div><div class="scan-step-sub">Calculating final scores and feedback</div></div>
+                  <div class="scan-step-status">Waiting</div>
+                </div>
+              </div>
+            </div>
+
+            <div id="scan-results-card" class="card hidden">
+              <div class="card-title">✅ Scan Complete</div>
+              <div class="card-sub">Results saved. Students can now see their scores.</div>
+              <div id="scan-results-list"></div>
+              <button class="btn btn-secondary btn-sm full-width" style="margin-top:16px" onclick="showView('reports')">View Full Report →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORTS VIEW -->
+    <div id="view-reports" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left"><h1>Reports & Analytics</h1><p>Comprehensive analysis results</p></div>
+        <div class="page-header-right">
+          <button class="btn btn-sm btn-gold" onclick="downloadReport()">⬇ Download CSV</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="card section-gap">
+          <div class="card-title">🏆 Class Leaderboard</div>
+          <div class="card-sub" id="leaderboard-sub">Ranked by score (highest first)</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Rank</th><th>Student</th><th>Subject</th><th>Grade</th><th>Score</th><th>Originality</th><th>AI Prob.</th><th>Copy Sim.</th><th>Flags</th></tr>
+              </thead>
+              <tbody id="leaderboard-table">
+                <tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card section-gap">
+          <div class="card-title">🚩 Flagged Assignments</div>
+          <div class="card-sub">Submissions requiring attention</div>
+          <div id="flagged-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Assignment Detail Modal -->
+<div class="modal-overlay" id="assignment-modal">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <div class="modal-title" id="assignment-modal-title">Assignment Detail</div>
+      <button class="modal-close" onclick="VSTRA.closeModal('assignment-modal')">✕</button>
+    </div>
+    <div id="assignment-modal-body"></div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script>
+  const user = VSTRA.requireAuth('teacher');
+  if (!user) throw new Error('Not authorized');
+  VSTRA.fillSidebarUser(user);
+  document.getElementById('teacher-welcome').textContent = `Welcome, ${user.name || user.email}!`;
+
+  let allAssignments = [];   // full unfiltered list from API
+  let scoreChart = null, flagChart = null;
+  let currentView = 'overview';
+
+  // ── DATA LOADING ──────────────────────────────────────────────────────────
+
+  async function loadAllData() {
+    try {
+      const data = await VSTRA.apiCall('/teacher/assignments');
+      allAssignments = data.assignments || [];
+      return allAssignments;
+    } catch(e) {
+      VSTRA.showToast('Failed to load assignments: ' + e.message, 'error');
+      return [];
+    }
+  }
+
+  // ── FILTER ENGINE ─────────────────────────────────────────────────────────
+  // THIS is the central function — called every time a filter changes.
+  // It filters allAssignments and refreshes whichever view is active.
+
+  function getFilterValues() {
+    return {
+      subject: document.getElementById('filter-subject').value,
+      grade:   document.getElementById('filter-grade').value,
+    };
+  }
+
+  function getFilteredAssignments() {
+    const { subject, grade } = getFilterValues();
+    return allAssignments.filter(a =>
+      (!subject || a.subject === subject) &&
+      (!grade   || a.student_grade === grade)
+    );
+  }
+
+  function applyFilters() {
+    const { subject, grade } = getFilterValues();
+    const isFiltered = subject || grade;
+
+    // Show/hide the "filter active" indicators
+    const filterLabel  = document.getElementById('filter-label');
+    const filterBanner = document.getElementById('overview-filter-banner');
+    if (filterLabel)  filterLabel.style.display  = isFiltered ? 'block' : 'none';
+    if (filterBanner) filterBanner.style.display = isFiltered ? 'flex'  : 'none';
+
+    if (isFiltered && filterBanner) {
+      const parts = [];
+      if (subject) parts.push(subject);
+      if (grade)   parts.push(grade);
+      document.getElementById('overview-filter-text').textContent =
+        `Showing: ${parts.join(' · ')}`;
+    }
+
+    const filtered = getFilteredAssignments();
+
+    // Refresh the currently active view with filtered data
+    if (currentView === 'overview')     renderOverviewData(filtered);
+    if (currentView === 'assignments')  renderFullTable(filtered);
+    if (currentView === 'reports')      renderReportsData(filtered);
+    if (currentView === 'scan')         renderScanList(filtered.filter(a => a.status !== 'scored'));
+  }
+
+  function clearFilters() {
+    document.getElementById('filter-subject').value = '';
+    document.getElementById('filter-grade').value   = '';
+    applyFilters();
+  }
+
+  // ── VIEW SWITCHING ────────────────────────────────────────────────────────
+
+  function showView(name) {
+    ['overview','assignments','scan','reports'].forEach(v => {
+      document.getElementById(`view-${v}`).classList.toggle('hidden', v !== name);
+      document.getElementById(`nav-${v}`)?.classList.toggle('active', v === name);
+    });
+    currentView = name;
+
+    // Each view just renders from the already-loaded (and filtered) data
+    const filtered = getFilteredAssignments();
+    if (name === 'overview')    renderOverviewData(filtered);
+    if (name === 'assignments') renderFullTable(filtered);
+    if (name === 'scan')        renderScanList(filtered.filter(a => a.status !== 'scored'));
+    if (name === 'reports')     renderReportsData(filtered);
+  }
+
+  // ── OVERVIEW RENDERING ────────────────────────────────────────────────────
+
+  function renderOverviewData(assignments) {
+    const total   = assignments.length;
+    const pending = assignments.filter(a => a.status === 'submitted').length;
+    const flagged = assignments.filter(a => (a.flags||[]).length > 0).length;
+    const scores  = assignments.filter(a => a.score != null).map(a => a.score);
+    const avg     = scores.length
+      ? (scores.reduce((s,x) => s+x, 0) / scores.length).toFixed(1)
+      : '—';
+
+    // Animate stat cards
+    VSTRA.animateNumber(document.getElementById('t-stat-total'),   total);
+    VSTRA.animateNumber(document.getElementById('t-stat-pending'), pending);
+    VSTRA.animateNumber(document.getElementById('t-stat-flagged'), flagged);
+    document.getElementById('t-stat-avg').textContent = avg;
+
+    // Recent table — show up to 8 rows
+    renderRecentTable(assignments.slice(0, 8));
+
+    // Charts
+    renderCharts(assignments);
+
+    // Update subtitles to reflect filter
+    const { subject, grade } = getFilterValues();
+    const filterNote = [subject, grade].filter(Boolean).join(', ');
+    document.getElementById('score-chart-sub').textContent = filterNote
+      ? `Scores for: ${filterNote}`
+      : 'Scores across all scanned assignments';
+    document.getElementById('recent-table-sub').textContent = filterNote
+      ? `Filtered: ${filterNote}`
+      : 'Latest assignments awaiting review';
+  }
+
+  function renderRecentTable(assignments) {
+    const tbody = document.getElementById('t-recent-table');
+    if (!assignments.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">No submissions match the current filter.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = assignments.map(a => `
+      <tr>
+        <td><input type="checkbox" class="row-check" value="${a.id}"/></td>
+        <td class="td-primary">${a.student_name || a.student_email || '—'}</td>
+        <td>${a.subject}</td>
+        <td>${a.student_grade || '—'}</td>
+        <td>${VSTRA.formatDate(a.submitted_at)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td>${a.score != null ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700">${a.score}/10</span>` : '—'}</td>
+        <td>${renderFlagBadges(a.flags)}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick='openAssignmentModal(${JSON.stringify(a).replace(/'/g,"&#39;")})'>Detail</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── ASSIGNMENTS TABLE ─────────────────────────────────────────────────────
+
+  function renderFullTable(assignments) {
+    const { subject, grade } = getFilterValues();
+    const filterNote = [subject, grade].filter(Boolean).join(' · ');
+    const subEl = document.getElementById('assignments-sub');
+    if (subEl) subEl.textContent = filterNote
+      ? `Filtered: ${filterNote} — ${assignments.length} result(s)`
+      : `All submissions — ${assignments.length} total`;
+
+    const tbody = document.getElementById('all-assignments-table');
+    if (!assignments.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:32px">No assignments match the current filter.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = assignments.map(a => `
+      <tr>
+        <td><input type="checkbox" class="row-check2" value="${a.id}"/></td>
+        <td class="td-primary">${a.student_name || '—'}</td>
+        <td>${a.subject}</td>
+        <td>${a.student_grade || '—'}</td>
+        <td>${a.title || '—'}</td>
+        <td>${VSTRA.formatDate(a.submitted_at)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td>${a.score != null ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700">${a.score}/10</span>` : '—'}</td>
+        <td>${renderFlagBadges(a.flags)}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick='openAssignmentModal(${JSON.stringify(a).replace(/'/g,"&#39;")})'>Detail</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── SCAN LIST ─────────────────────────────────────────────────────────────
+
+  function renderScanList(pending) {
+    const container = document.getElementById('scan-assignment-list');
+    if (!pending.length) {
+      container.innerHTML = '<p class="text-muted" style="padding:20px 0">No pending assignments match the filter.</p>';
+      updateScanCount();
+      return;
+    }
+    container.innerHTML = pending.map(a => `
+      <label class="custom-checkbox" style="padding:10px 0;border-bottom:1px solid var(--border);display:flex">
+        <input type="checkbox" class="scan-check" value="${a.id}" onchange="updateScanCount()"/>
+        <span class="checkbox-box"></span>
+        <span style="margin-left:8px">
+          <strong>${a.student_name || a.student_email || '—'}</strong>
+          <span class="text-muted"> · ${a.subject} · ${a.student_grade || '—'}</span>
+        </span>
+      </label>
+    `).join('');
+    updateScanCount();
+  }
+
+  function updateScanCount() {
+    const checked = document.querySelectorAll('.scan-check:checked').length;
+    document.getElementById('scan-count').textContent = `${checked} selected`;
+  }
+  function selectAllForScan() {
+    document.querySelectorAll('.scan-check').forEach(c => c.checked = true);
+    updateScanCount();
+  }
+  function clearScanSelection() {
+    document.querySelectorAll('.scan-check').forEach(c => c.checked = false);
+    updateScanCount();
+  }
+
+  // ── SCAN EXECUTION ────────────────────────────────────────────────────────
+
+  async function startScan() {
+    const checked = [...document.querySelectorAll('.scan-check:checked')].map(c => c.value);
+    if (!checked.length) { VSTRA.showToast('Select at least one assignment', 'error'); return; }
+
+    document.getElementById('scan-progress-card').style.display = 'block';
+    document.getElementById('scan-results-card').classList.add('hidden');
+
+    // Reset all steps
+    ['preprocess','ocr','stylometry','handwriting','ai-detect','copy','score'].forEach(s => {
+      const el = document.getElementById(`step-${s}`);
+      el.classList.remove('active','done');
+      el.querySelector('.scan-step-status').textContent = 'Waiting';
+    });
+
+    const steps  = ['preprocess','ocr','stylometry','handwriting','ai-detect','copy','score'];
+    const labels = ['Preprocessing pages…','Extracting handwritten text…','Analysing writing style…',
+                    'Analysing handwriting strokes…','Detecting AI-generated content…',
+                    'Cross-checking for copies…','Generating final scores…'];
+    const progressEl = document.getElementById('scan-progress-bar');
+    const labelEl    = document.getElementById('scan-progress-label');
+
+    // Animate progress UI while backend is processing
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      if (stepIdx > 0) {
+        const prev = document.getElementById(`step-${steps[stepIdx-1]}`);
+        prev.classList.remove('active'); prev.classList.add('done');
+        prev.querySelector('.scan-step-status').textContent = 'Done ✓';
+      }
+      if (stepIdx < steps.length) {
+        const cur = document.getElementById(`step-${steps[stepIdx]}`);
+        cur.classList.add('active');
+        cur.querySelector('.scan-step-status').textContent = 'Processing…';
+        labelEl.textContent = labels[stepIdx];
+        progressEl.style.width = `${Math.round((stepIdx+1)/steps.length*85)}%`;
+        stepIdx++;
+      }
+    }, 18000 / steps.length); // spread over ~18s (typical scan time)
+
+    try {
+      const res = await VSTRA.apiCall('/teacher/scan', 'POST', { assignment_ids: checked });
+
+      clearInterval(stepInterval);
+      // Mark all steps done
+      steps.forEach(s => {
+        const el = document.getElementById(`step-${s}`);
+        el.classList.remove('active'); el.classList.add('done');
+        el.querySelector('.scan-step-status').textContent = 'Done ✓';
+      });
+      progressEl.style.width = '100%';
+      labelEl.textContent = '✅ Scan complete!';
+
+      // Show results
+      const list = document.getElementById('scan-results-list');
+      list.innerHTML = (res.results || []).map(r => `
+        <div style="padding:14px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <strong>${r.student_name || '—'}</strong>
+            <span class="text-muted"> · ${r.subject}</span>
+            ${(r.flags||[]).length ? `<div class="flag-list" style="margin-top:6px">${r.flags.map(f=>`<span class="flag-item" style="font-size:10px">🚩 ${f}</span>`).join('')}</div>` : '<div style="font-size:11px;color:var(--success);margin-top:4px">✅ No flags</div>'}
+          </div>
+          <span style="color:${VSTRA.scoreColor(r.score)};font-family:var(--font-display);font-size:22px;font-weight:800">${r.score}/10</span>
+        </div>
+      `).join('');
+      document.getElementById('scan-results-card').classList.remove('hidden');
+      VSTRA.showToast(`Scanned ${res.scanned} assignment(s) successfully!`, 'success');
+
+      // Reload data and re-apply current filters
+      await loadAllData();
+      applyFilters();
+    } catch(e) {
+      clearInterval(stepInterval);
+      VSTRA.showToast('Scan failed: ' + e.message, 'error');
+    }
+  }
+
+  // ── REPORTS ───────────────────────────────────────────────────────────────
+
+  function renderReportsData(assignments) {
+    const { subject, grade } = getFilterValues();
+    const filterNote = [subject, grade].filter(Boolean).join(' · ');
+    const subEl = document.getElementById('leaderboard-sub');
+    if (subEl) subEl.textContent = filterNote
+      ? `Filtered: ${filterNote}`
+      : 'Ranked by score (highest first)';
+
+    const scored = assignments.filter(a => a.score != null).sort((a,b) => b.score - a.score);
+    const tbody  = document.getElementById('leaderboard-table');
+
+    if (!scored.length) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--text-muted);padding:32px">No scored assignments match the filter.</td></tr>`;
+    } else {
+      tbody.innerHTML = scored.map((a, i) => {
+        const an    = a.analysis || {};
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}`;
+        return `<tr>
+          <td style="font-size:18px">${medal}</td>
+          <td class="td-primary">${a.student_name || '—'}</td>
+          <td>${a.subject}</td>
+          <td>${a.student_grade || '—'}</td>
+          <td><span style="color:${VSTRA.scoreColor(a.score)};font-weight:700;font-family:var(--font-display)">${a.score}/10</span></td>
+          <td>${an.originality      != null ? Math.round(an.originality*100)+'%'      : '—'}</td>
+          <td>${an.ai_probability   != null ? Math.round(an.ai_probability*100)+'%'   : '—'}</td>
+          <td>${an.copy_similarity  != null ? Math.round(an.copy_similarity*100)+'%'  : '—'}</td>
+          <td>${renderFlagBadges(a.flags)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    const flagged    = assignments.filter(a => (a.flags||[]).length > 0);
+    const flaggedDiv = document.getElementById('flagged-list');
+    if (!flagged.length) {
+      flaggedDiv.innerHTML = '<p class="text-muted" style="padding:20px 0">✅ No flagged assignments!</p>';
+    } else {
+      flaggedDiv.innerHTML = flagged.map(a => `
+        <div style="padding:16px;background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.15);border-radius:12px;margin-bottom:12px">
+          <div class="flex justify-between items-center">
+            <div>
+              <strong>${a.student_name || '—'}</strong>
+              <span class="text-muted"> · ${a.subject} · ${a.student_grade || '—'}</span>
+            </div>
+            ${a.score != null ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700">${a.score}/10</span>` : ''}
+          </div>
+          <div class="flag-list" style="margin-top:10px">
+            ${(a.flags||[]).map(f=>`<div class="flag-item">🚩 ${f}</div>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // ── CHARTS ────────────────────────────────────────────────────────────────
+
+  function renderCharts(assignments) {
+    const scored = assignments.filter(a => a.score != null);
+    const bins   = [0,0,0,0,0];
+    scored.forEach(a => {
+      if      (a.score <= 2) bins[0]++;
+      else if (a.score <= 4) bins[1]++;
+      else if (a.score <= 6) bins[2]++;
+      else if (a.score <= 8) bins[3]++;
+      else                   bins[4]++;
+    });
+
+    const ctx1 = document.getElementById('score-chart').getContext('2d');
+    if (scoreChart) scoreChart.destroy();
+    scoreChart = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: ['0–2','3–4','5–6','7–8','9–10'],
+        datasets: [{
+          label: 'Students',
+          data: bins,
+          backgroundColor: ['#ef4444','#f59e0b','#3b82f6','#06b6d4','#10b981'],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color:'#64748b' }, grid: { color:'#1e2d4a' } },
+          y: { ticks: { color:'#64748b', stepSize:1 }, grid: { color:'#1e2d4a' }, beginAtZero: true }
+        }
+      }
+    });
+
+    let ai = 0, copy = 0, hw = 0;
+    assignments.forEach(a => {
+      (a.flags||[]).forEach(f => {
+        const fl = f.toLowerCase();
+        if (fl.includes('ai'))          ai++;
+        else if (fl.includes('cop'))    copy++;
+        else if (fl.includes('handwrit') || fl.includes('hw')) hw++;
+      });
+    });
+
+    const ctx2 = document.getElementById('flag-chart').getContext('2d');
+    if (flagChart) flagChart.destroy();
+    flagChart = new Chart(ctx2, {
+      type: 'doughnut',
+      data: {
+        labels: ['AI Content','Copy Detected','HW Similarity'],
+        datasets: [{
+          data: [ai, copy, hw],
+          backgroundColor: ['#8b5cf6','#ef4444','#f59e0b'],
+          borderColor: '#0c1020', borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position:'bottom', labels: { color:'#94a3b8', boxWidth:12 } }
+        }
+      }
+    });
+  }
+
+  // ── MODAL ─────────────────────────────────────────────────────────────────
+
+  function openAssignmentModal(a) {
+    if (typeof a === 'string') { try { a = JSON.parse(a); } catch(e) { return; } }
+    document.getElementById('assignment-modal-title').textContent =
+      `${a.student_name || 'Student'} — ${a.subject}`;
+    const an    = a.analysis || {};
+    const flags = a.flags    || [];
+    document.getElementById('assignment-modal-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div><div class="text-muted mb-8">Student</div><strong>${a.student_name || '—'}</strong></div>
+        <div><div class="text-muted mb-8">Subject</div><strong>${a.subject}</strong></div>
+        <div><div class="text-muted mb-8">Grade</div><strong>${a.student_grade || '—'}</strong></div>
+        <div><div class="text-muted mb-8">Status</div>${statusBadge(a.status)}</div>
+        <div><div class="text-muted mb-8">Submitted</div><strong>${VSTRA.formatDate(a.submitted_at)}</strong></div>
+        <div><div class="text-muted mb-8">Score</div>${a.score != null
+          ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700;font-size:20px">${a.score}/10</span>
+             <span style="font-size:12px;color:var(--text-muted);margin-left:6px">${a.grade_label || ''}</span>`
+          : '—'}</div>
+      </div>
+      ${flags.length
+        ? `<div class="flag-list mb-16">${flags.map(f=>`<div class="flag-item">🚩 ${f}</div>`).join('')}</div>`
+        : '<p style="color:var(--success);font-size:13px;margin-bottom:16px">✅ No flags detected</p>'}
+      ${Object.keys(an).length ? `
+        <div class="divider"></div>
+        <div style="font-family:var(--font-display);font-size:14px;font-weight:700;margin-bottom:16px">AI Analysis Breakdown</div>
+        ${[
+          {label:'Originality',             key:'originality',    invert:false},
+          {label:'AI Content Probability',  key:'ai_probability', invert:true},
+          {label:'Copy Similarity',         key:'copy_similarity',invert:true},
+          {label:'Handwriting Consistency', key:'hw_consistency', invert:false},
+          {label:'Style Authenticity',      key:'style_score',    invert:false},
+          {label:'OCR Confidence',          key:'ocr_confidence', invert:false},
+        ].map(item => {
+          const val = an[item.key];
+          if (val == null) return '';
+          const pct = Math.round(val * 100);
+          const cls = item.invert
+            ? (pct>60?'high':pct>30?'medium':'low')
+            : (pct>60?'low':pct>30?'medium':'high');
+          return `<div class="analysis-item" style="margin-bottom:14px">
+            <div class="analysis-header">
+              <span class="analysis-label">${item.label}</span>
+              <span class="analysis-value ${cls}">${pct}%</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')}
+      ` : ''}
+      ${a.feedback ? `
+        <div class="divider"></div>
+        <div class="text-muted mb-8">Feedback</div>
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.7">${a.feedback}</p>
+      ` : ''}
+    `;
+    VSTRA.openModal('assignment-modal');
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+
+  function statusBadge(status) {
+    const map = {
+      submitted: `<span class="badge badge-submitted">● Submitted</span>`,
+      reviewing: `<span class="badge badge-reviewing">● Reviewing</span>`,
+      scored:    `<span class="badge badge-scored">● Scored</span>`,
+    };
+    return map[status] || `<span class="badge">${status || 'unknown'}</span>`;
+  }
+
+  function renderFlagBadges(flags) {
+    if (!flags || !flags.length)
+      return '<span class="text-muted" style="font-size:11px">None</span>';
+    return flags.map(() => `<span class="badge badge-flagged" style="font-size:9px">🚩</span>`).join(' ');
+  }
+
+  function toggleSelectAll(cb) {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = cb.checked);
+  }
+  function toggleSelectAll2(cb) {
+    document.querySelectorAll('.row-check2').forEach(c => c.checked = cb.checked);
+  }
+
+  async function downloadReport() {
+    try {
+      const { subject, grade } = getFilterValues();
+      const params = new URLSearchParams();
+      if (subject) params.set('subject', subject);
+      if (grade)   params.set('grade', grade);
+      const token = VSTRA.getToken();
+      const res   = await fetch(
+        `http://localhost:5000/api/teacher/report/download?${params}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (!res.ok) throw new Error('Download failed');
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement('a');
+      a.href = url;
+      a.download = `vrittify_report${subject?'_'+subject:''}${grade?'_'+grade:''}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      VSTRA.showToast('Report downloaded!', 'success');
+    } catch(e) {
+      VSTRA.showToast('Download failed: ' + e.message, 'error');
+    }
+  }
+
+  // ── BOOT ──────────────────────────────────────────────────────────────────
+  // Load all data once, then render the overview view
+
+  loadAllData().then(() => showView('overview'));
+</script>
+</body>
+</html>

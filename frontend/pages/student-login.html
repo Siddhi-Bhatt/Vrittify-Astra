@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Login – VRITTIFY ASTRA</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+</head>
+<body class="page-body">
+
+<div class="auth-layout">
+  <!-- Visual Panel -->
+  <div class="auth-visual">
+    <div class="auth-visual-content">
+      <div class="auth-visual-icon">🎓</div>
+      <div class="auth-visual-title">Student Portal</div>
+      <p class="auth-visual-sub">Submit your handwritten assignments and track your results in real-time.</p>
+      <div class="auth-visual-features">
+        <div class="auth-feature"><span class="auth-feature-dot"></span> Upload assignment PDFs</div>
+        <div class="auth-feature"><span class="auth-feature-dot"></span> Track review status</div>
+        <div class="auth-feature"><span class="auth-feature-dot"></span> View AI-generated scores</div>
+        <div class="auth-feature"><span class="auth-feature-dot"></span> See detailed feedback</div>
+        <div class="auth-feature"><span class="auth-feature-dot"></span> Resubmit if needed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Panel -->
+  <div class="auth-form-panel">
+    <div class="auth-form-inner">
+      <div class="auth-brand">
+        <span class="auth-brand-icon">◈</span>
+        VRITTIFY <em style="color:var(--accent);font-style:italic">ASTRA</em>
+      </div>
+
+      <div class="tab-nav">
+        <button class="tab-btn active" data-group="auth" data-tab="login">Login</button>
+        <button class="tab-btn" data-group="auth" data-tab="register">Register</button>
+      </div>
+
+      <!-- LOGIN TAB -->
+      <div class="tab-panel active" data-group="auth" data-tab="login">
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Sign in to your student account</p>
+
+        <div class="form-error" id="login-error"></div>
+
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="login-email" placeholder="student@school.edu" autocomplete="email"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="login-password" placeholder="••••••••"/>
+        </div>
+        <button class="btn btn-primary" id="login-btn" onclick="doLogin()">
+          <span id="login-btn-text">Sign In →</span>
+        </button>
+      </div>
+
+      <!-- REGISTER TAB -->
+      <div class="tab-panel" data-group="auth" data-tab="register">
+        <h2 class="auth-title">Create Account</h2>
+        <p class="auth-subtitle">Join as a student</p>
+
+        <div class="form-error" id="reg-error"></div>
+
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="reg-name" placeholder="Your full name"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="reg-email" placeholder="student@school.edu"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">School Name</label>
+          <input type="text" class="form-input" id="reg-school" placeholder="e.g. Delhi Public School"/>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Grade / Class</label>
+            <select class="form-select" id="reg-grade">
+              <option value="">Select grade</option>
+              <option>Grade 6</option><option>Grade 7</option><option>Grade 8</option>
+              <option>Grade 9</option><option>Grade 10</option>
+              <option>Grade 11</option><option>Grade 12</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Roll Number</label>
+            <input type="text" class="form-input" id="reg-roll" placeholder="e.g. 2024001"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="reg-password" placeholder="Min 6 characters"/>
+        </div>
+        <button class="btn btn-primary" onclick="doRegister()">Create Account →</button>
+      </div>
+
+      <div class="auth-switch" style="margin-top:20px">
+        <a href="../index.html">← Back to Home</a>
+        &nbsp;·&nbsp;
+        <a href="teacher-login.html">Teacher Login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script>
+  VSTRA.initTabs();
+
+  // Redirect if already logged in
+  const u = VSTRA.getUser();
+  if (u && u.role === 'student') window.location.href = 'student-dashboard.html';
+
+  async function doLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errEl = document.getElementById('login-error');
+    const btn = document.getElementById('login-btn');
+
+    if (!email || !password) { showErr(errEl, 'Please fill all fields'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+    try {
+      const res = await VSTRA.apiCall('/auth/login', 'POST', { email, password, role: 'student' });
+      VSTRA.setAuth(res.token, res.user);
+      window.location.href = 'student-dashboard.html';
+    } catch(e) {
+      showErr(errEl, e.message);
+      btn.disabled = false;
+      btn.textContent = 'Sign In →';
+    }
+  }
+
+  async function doRegister() {
+    const errEl = document.getElementById('reg-error');
+    const name = document.getElementById('reg-name').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const school = document.getElementById('reg-school').value.trim();
+    const grade = document.getElementById('reg-grade').value;
+    const roll = document.getElementById('reg-roll').value.trim();
+    const password = document.getElementById('reg-password').value;
+
+    if (!name || !email || !school || !grade || !password) {
+      showErr(errEl, 'Please fill all required fields'); return;
+    }
+    if (password.length < 6) { showErr(errEl, 'Password must be at least 6 characters'); return; }
+
+    try {
+      const res = await VSTRA.apiCall('/auth/register', 'POST', {
+        name, email, school, grade, roll_number: roll, password, role: 'student'
+      });
+      VSTRA.setAuth(res.token, res.user);
+      window.location.href = 'student-dashboard.html';
+    } catch(e) { showErr(errEl, e.message); }
+  }
+
+  function showErr(el, msg) {
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 4000);
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const activeTab = document.querySelector('.tab-panel.active');
+      if (activeTab.dataset.tab === 'login') doLogin();
+    }
+  });
+</script>
+</body>
+</html>

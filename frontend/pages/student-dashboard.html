@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard – VRITTIFY ASTRA</title>
+  <link rel="stylesheet" href="../css/main.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+</head>
+<body class="page-body">
+
+<div class="dashboard-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="sidebar-brand-icon">◈</span>
+      VRITTIFY <em>ASTRA</em>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-label">Navigation</div>
+      <a class="nav-item active" id="nav-overview" onclick="showView('overview')">
+        <span class="nav-icon">📊</span> Overview
+      </a>
+      <a class="nav-item" id="nav-submit" onclick="showView('submit')">
+        <span class="nav-icon">📤</span> Submit Assignment
+      </a>
+      <a class="nav-item" id="nav-assignments" onclick="showView('assignments')">
+        <span class="nav-icon">📋</span> My Assignments
+      </a>
+      <a class="nav-item" id="nav-results" onclick="showView('results')">
+        <span class="nav-icon">🏆</span> Results & Scores
+      </a>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar">S</div>
+      <div class="user-info">
+        <div class="user-name">Loading…</div>
+        <div class="user-role">🎓 Student</div>
+      </div>
+      <button class="logout-btn" onclick="VSTRA.logout()" title="Logout">⏏</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+
+    <!-- OVERVIEW VIEW -->
+    <div id="view-overview">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Dashboard</h1>
+          <p id="welcome-msg">Welcome back!</p>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-primary btn-sm" onclick="showView('submit')">+ Submit Assignment</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="stats-grid" id="overview-stats">
+          <div class="stat-card">
+            <div class="stat-card-icon">📤</div>
+            <div class="stat-card-value" id="stat-total">0</div>
+            <div class="stat-card-label">Total Submitted</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">⏳</div>
+            <div class="stat-card-value" id="stat-pending">0</div>
+            <div class="stat-card-label">Under Review</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">✅</div>
+            <div class="stat-card-value" id="stat-scored">0</div>
+            <div class="stat-card-label">Scored</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon">⭐</div>
+            <div class="stat-card-value" id="stat-avg">—</div>
+            <div class="stat-card-label">Avg. Score</div>
+          </div>
+        </div>
+
+        <!-- Recent submissions -->
+        <div class="card section-gap">
+          <div class="card-title">Recent Submissions</div>
+          <div class="card-sub">Your latest assignment submissions</div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Score</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="recent-table">
+                <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">
+                  No assignments yet. <a href="#" onclick="showView('submit')" style="color:var(--accent)">Submit one now!</a>
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT VIEW -->
+    <div id="view-submit" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Submit Assignment</h1>
+          <p>Upload your handwritten assignment PDF</p>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="card" style="max-width:600px;margin:0 auto">
+          <div class="card-title">📤 New Submission</div>
+          <div class="card-sub">Upload your handwritten PDF assignment for AI analysis</div>
+
+          <div class="form-group">
+            <label class="form-label">Subject</label>
+            <select class="form-select" id="sub-subject">
+              <option value="">Select subject</option>
+              <option>Mathematics</option><option>Physics</option><option>Chemistry</option>
+              <option>Biology</option><option>English</option><option>History</option>
+              <option>Geography</option><option>Computer Science</option><option>Economics</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Assignment Title</label>
+            <input type="text" class="form-input" id="sub-title" placeholder="e.g. Chapter 5 – Quadratic Equations"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Upload PDF</label>
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+              <input type="file" id="file-input" accept=".pdf" onchange="handleFileSelect(this)"/>
+              <div class="upload-icon">📄</div>
+              <div class="upload-title">Drop PDF here or click to browse</div>
+              <div class="upload-sub">Supported: PDF · Max size: 20MB</div>
+              <div class="upload-filename" id="upload-filename"></div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Additional Notes (optional)</label>
+            <textarea class="form-input" id="sub-notes" rows="3" placeholder="Any notes for the teacher…" style="resize:vertical"></textarea>
+          </div>
+
+          <button class="btn btn-primary btn-lg full-width" id="submit-btn" onclick="submitAssignment()">
+            Submit Assignment →
+          </button>
+
+          <!-- Success state -->
+          <div id="submit-success" class="hidden" style="margin-top:20px;padding:20px;background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:12px;text-align:center">
+            <div style="font-size:36px;margin-bottom:12px">✅</div>
+            <div class="font-display" style="font-size:18px;font-weight:700;margin-bottom:6px">Assignment Submitted!</div>
+            <p class="text-muted">Your teacher will review and scan it soon. You'll see updates in "My Assignments".</p>
+            <button class="btn btn-secondary btn-sm" style="margin-top:16px" onclick="resetSubmitForm()">Submit Another</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ASSIGNMENTS VIEW -->
+    <div id="view-assignments" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>My Assignments</h1>
+          <p>All your submitted assignments</p>
+        </div>
+        <div class="page-header-right">
+          <button class="btn btn-secondary btn-sm" onclick="loadAssignments()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="content-area">
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Subject</th>
+                  <th>Title</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th>Score</th>
+                  <th>Flags</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="assignments-table">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS VIEW -->
+    <div id="view-results" class="hidden">
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Results & Scores</h1>
+          <p>Detailed AI analysis of your work</p>
+        </div>
+      </div>
+      <div class="content-area" id="results-content">
+        <p class="text-muted" style="text-align:center;padding:60px">Select an assignment to view detailed results.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Result Detail Modal -->
+<div class="modal-overlay" id="result-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-header">
+      <div class="modal-title" id="result-modal-title">Assignment Result</div>
+      <button class="modal-close" onclick="VSTRA.closeModal('result-modal')">✕</button>
+    </div>
+    <div id="result-modal-body"></div>
+  </div>
+</div>
+
+<script src="../js/utils.js"></script>
+<script>
+  const user = VSTRA.requireAuth('student');
+  if (!user) throw new Error('Not authorized');
+  VSTRA.fillSidebarUser(user);
+  document.getElementById('welcome-msg').textContent = `Welcome, ${user.name || user.email}!`;
+
+  let allAssignments = [];
+
+  function showView(name) {
+    ['overview','submit','assignments','results'].forEach(v => {
+      document.getElementById(`view-${v}`).classList.toggle('hidden', v !== name);
+      document.getElementById(`nav-${v}`)?.classList.toggle('active', v === name);
+    });
+    if (name === 'overview') loadOverview();
+    if (name === 'assignments') loadAssignments();
+    if (name === 'results') loadResultsList();
+  }
+
+  async function loadOverview() {
+    try {
+      const data = await VSTRA.apiCall('/student/assignments');
+      allAssignments = data.assignments || [];
+      const total = allAssignments.length;
+      const pending = allAssignments.filter(a => a.status !== 'scored').length;
+      const scored = allAssignments.filter(a => a.status === 'scored').length;
+      const scores = allAssignments.filter(a => a.score != null).map(a => a.score);
+      const avg = scores.length ? (scores.reduce((s,x) => s+x, 0) / scores.length).toFixed(1) : '—';
+
+      VSTRA.animateNumber(document.getElementById('stat-total'), total);
+      VSTRA.animateNumber(document.getElementById('stat-pending'), pending);
+      VSTRA.animateNumber(document.getElementById('stat-scored'), scored);
+      document.getElementById('stat-avg').textContent = avg;
+
+      renderRecentTable(allAssignments.slice(0, 5));
+    } catch(e) { VSTRA.showToast('Failed to load data: ' + e.message, 'error'); }
+  }
+
+  function renderRecentTable(assignments) {
+    const tbody = document.getElementById('recent-table');
+    if (!assignments.length) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px">
+        No assignments yet. <a href="#" onclick="showView('submit')" style="color:var(--accent)">Submit one now!</a>
+      </td></tr>`;
+      return;
+    }
+    tbody.innerHTML = assignments.map(a => `
+      <tr>
+        <td class="td-primary">${a.subject}</td>
+        <td>${VSTRA.formatDate(a.submitted_at)}</td>
+        <td>${statusBadge(a.status)}</td>
+        <td>${a.score != null ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700">${a.score}/10</span>` : '—'}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="openResultModal(${JSON.stringify(a).replace(/"/g,'&quot;')})">View</button></td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadAssignments() {
+    try {
+      const data = await VSTRA.apiCall('/student/assignments');
+      allAssignments = data.assignments || [];
+      const tbody = document.getElementById('assignments-table');
+      if (!allAssignments.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:32px">No submissions yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = allAssignments.map(a => `
+        <tr>
+          <td class="td-primary">${a.subject}</td>
+          <td>${a.title || '—'}</td>
+          <td>${VSTRA.formatDate(a.submitted_at)}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td>${a.score != null ? `<span style="color:${VSTRA.scoreColor(a.score)};font-weight:700;font-family:var(--font-display)">${a.score}/10</span>` : '—'}</td>
+          <td>${renderFlags(a.flags)}</td>
+          <td style="display:flex;gap:6px">
+            <button class="btn btn-secondary btn-sm" onclick="openResultModal(${JSON.stringify(a).replace(/"/g,'&quot;')})">Detail</button>
+            ${a.status === 'scored' ? `<button class="btn btn-sm" style="background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.3)" onclick="resubmit('${a.id}')">↺ Resubmit</button>` : ''}
+          </td>
+        </tr>
+      `).join('');
+    } catch(e) { VSTRA.showToast('Failed to load: ' + e.message, 'error'); }
+  }
+
+  function loadResultsList() {
+    const scored = allAssignments.filter(a => a.status === 'scored');
+    if (!scored.length) {
+      document.getElementById('results-content').innerHTML = `
+        <p class="text-muted" style="text-align:center;padding:60px">No scored assignments yet. Submit and wait for your teacher to scan.</p>`;
+      return;
+    }
+    document.getElementById('results-content').innerHTML = scored.map(a => buildResultCard(a)).join('');
+  }
+
+  function buildResultCard(a) {
+    const pct = (a.score / 10) * 100;
+    const flags = a.flags || [];
+    return `
+      <div class="card section-gap">
+        <div class="flex justify-between items-center mb-16">
+          <div>
+            <div class="card-title">${a.subject} — ${a.title || 'Assignment'}</div>
+            <div class="text-muted">Submitted: ${VSTRA.formatDate(a.submitted_at)}</div>
+          </div>
+          ${statusBadge(a.status)}
+        </div>
+        <div class="score-display">
+          <div class="score-ring" style="--pct:${pct}">
+            <div class="score-ring-inner">
+              <div class="score-val">${a.score}</div>
+              <div class="score-max">/10</div>
+            </div>
+          </div>
+          <div class="score-details">
+            <h3 style="color:${VSTRA.scoreColor(a.score)}">${VSTRA.scoreLabel(a.score)}</h3>
+            <p>${a.feedback || 'Analysis complete.'}</p>
+          </div>
+        </div>
+        ${flags.length ? `
+          <div style="margin-top:16px">
+            <div class="text-muted mb-8">⚠️ Flags Detected</div>
+            <div class="flag-list">${flags.map(f => `<div class="flag-item">🚩 ${f}</div>`).join('')}</div>
+          </div>` : '<div style="margin-top:12px;color:var(--success);font-size:13px">✅ No flags detected</div>'
+        }
+        ${renderAnalysisBars(a.analysis)}
+      </div>`;
+  }
+
+  function renderAnalysisBars(analysis) {
+    if (!analysis) return '';
+    const items = [
+      { label: 'Originality', key: 'originality', invert: false },
+      { label: 'AI Content Probability', key: 'ai_probability', invert: true },
+      { label: 'Copy Similarity', key: 'copy_similarity', invert: true },
+      { label: 'Handwriting Consistency', key: 'hw_consistency', invert: false },
+    ];
+    return `
+      <div class="divider"></div>
+      <div class="card-title mb-16" style="font-size:14px">AI Analysis Breakdown</div>
+      <div class="analysis-grid">
+        ${items.map(item => {
+          const val = analysis[item.key] ?? 0;
+          const pct = Math.round(val * 100);
+          const cls = item.invert ? (pct > 60 ? 'high' : pct > 30 ? 'medium' : 'low') : (pct > 60 ? 'low' : pct > 30 ? 'medium' : 'high');
+          return `
+            <div class="analysis-item">
+              <div class="analysis-header">
+                <span class="analysis-label">${item.label}</span>
+                <span class="analysis-value ${cls}">${pct}%</span>
+              </div>
+              <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  function openResultModal(a) {
+    document.getElementById('result-modal-title').textContent = `${a.subject} — Result`;
+    document.getElementById('result-modal-body').innerHTML = buildResultCard(a);
+    VSTRA.openModal('result-modal');
+  }
+
+  function statusBadge(status) {
+    const map = {
+      submitted: `<span class="badge badge-submitted">● Submitted</span>`,
+      reviewing: `<span class="badge badge-reviewing">● Reviewing</span>`,
+      scored:    `<span class="badge badge-scored">● Scored</span>`,
+    };
+    return map[status] || `<span class="badge">${status}</span>`;
+  }
+
+  function renderFlags(flags) {
+    if (!flags || !flags.length) return '<span class="text-muted">None</span>';
+    return flags.map(f => `<span class="badge badge-flagged">🚩</span>`).join(' ');
+  }
+
+  // File upload
+  function handleFileSelect(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) { VSTRA.showToast('File too large (max 20MB)', 'error'); return; }
+    const fnEl = document.getElementById('upload-filename');
+    fnEl.textContent = `📄 ${file.name} (${(file.size/1024/1024).toFixed(2)}MB)`;
+    fnEl.classList.add('show');
+  }
+
+  // Drag and drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file?.type === 'application/pdf') {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('file-input').files = dt.files;
+      handleFileSelect(document.getElementById('file-input'));
+    } else { VSTRA.showToast('Please drop a PDF file', 'error'); }
+  });
+
+  async function submitAssignment() {
+    const subject = document.getElementById('sub-subject').value;
+    const title = document.getElementById('sub-title').value.trim();
+    const fileInput = document.getElementById('file-input');
+    const notes = document.getElementById('sub-notes').value.trim();
+
+    if (!subject) { VSTRA.showToast('Please select a subject', 'error'); return; }
+    if (!fileInput.files[0]) { VSTRA.showToast('Please upload a PDF file', 'error'); return; }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Uploading…';
+
+    const fd = new FormData();
+    fd.append('subject', subject);
+    fd.append('title', title);
+    fd.append('notes', notes);
+    fd.append('file', fileInput.files[0]);
+
+    try {
+      await VSTRA.apiCall('/student/submit', 'POST', fd, true);
+      document.getElementById('submit-btn').classList.add('hidden');
+      document.getElementById('submit-success').classList.remove('hidden');
+      VSTRA.showToast('Assignment submitted successfully!', 'success');
+    } catch(e) {
+      VSTRA.showToast('Submission failed: ' + e.message, 'error');
+      btn.disabled = false; btn.textContent = 'Submit Assignment →';
+    }
+  }
+
+  function resetSubmitForm() {
+    document.getElementById('sub-subject').value = '';
+    document.getElementById('sub-title').value = '';
+    document.getElementById('sub-notes').value = '';
+    document.getElementById('file-input').value = '';
+    document.getElementById('upload-filename').classList.remove('show');
+    document.getElementById('submit-btn').classList.remove('hidden');
+    document.getElementById('submit-success').classList.add('hidden');
+    document.getElementById('submit-btn').disabled = false;
+    document.getElementById('submit-btn').textContent = 'Submit Assignment →';
+  }
+
+  function resubmit(id) {
+    showView('submit');
+    VSTRA.showToast('Resubmit: upload a new PDF for the same assignment', 'info');
+  }
+
+  // Initial load — showView() calls loadOverview() internally, no duplicate needed
+  showView('overview');
+</script>
+</body>
+</html>
